@@ -26,8 +26,8 @@ echo "Kernel version:" && uname -r
 echo -e "\nLoaded modules:" && lsmod
 
 if [[ -r /proc/config.gz ]]; then
-  echo -e "\nKernel config (compressed):"
-  zcat /proc/config.gz | head -n 20
+  echo -e "\nKernel config (compressed, preview):"
+  (zcat /proc/config.gz 2>/dev/null || true) | head -n 20 || true
 else
   echo -e "\nKernel config not available (no /proc/config.gz)."
 fi

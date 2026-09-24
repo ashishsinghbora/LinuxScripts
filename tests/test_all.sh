@@ -69,10 +69,17 @@ while IFS= read -r script; do
     fi
 done < <(find "$ROOT_DIR/scripts" -type f -name "*.sh" | sort)
 
-if [[ $FAILED -eq 0 ]]; then
-    echo "All tests passed."
-    exit 0
-else
-    echo "$FAILED test(s) failed."
+if [[ $FAILED -ne 0 ]]; then
+    echo "$FAILED static/help test(s) failed."
     exit 1
 fi
+
+echo ""
+echo "Running functional and behavioral test suite..."
+if [[ -f "$ROOT_DIR/tests/functional_test.sh" ]]; then
+    bash "$ROOT_DIR/tests/functional_test.sh"
+fi
+
+echo ""
+echo "All tests passed successfully."
+exit 0

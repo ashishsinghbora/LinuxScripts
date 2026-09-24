@@ -1,32 +1,67 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 show_help() {
-    cat <<'EOF'
-Usage: $(basename "$0") [OPTIONS] [DIRECTORY]
-
-Display the total size of a directory (including subdirectories).
-If DIRECTORY is omitted, the current directory is used.
+  cat <<'EOF'
+Usage: directory-size.sh [options] [directory]
 
 Options:
-  -h    Show this help message
+  -h, --help     Show this help message and exit
+  -d, --dir DIR  Directory to measure (default: current directory)
+
+Description:
+  Displays the total human-readable disk space used by a directory.
+  If omitted, measures the current working directory.
 EOF
+  exit 0
 }
 
-if [[ "${1-}" == "-h" ]]; then
-    show_help
-    exit 0
+TARGET_DIR=""
+
+while (( "$#" )); do
+  case "$1" in
+    -h|--help)
+      show_help
+      ;;
+    -d|--dir)
+      if [[ -n "${2-}" && "${2-}" != -* ]]; then
+        TARGET_DIR="$2"
+        shift
+      else
+        echo "Error: Argument for $1 is missing" >&2
+        exit 1
+      fi
+      ;;
+    -*)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      if [[ -z "$TARGET_DIR" ]]; then
+        TARGET_DIR="$1"
+      else
+        echo "Error: Unexpected additional argument: $1" >&2
+        exit 1
+      fi
+      ;;
+  esac
+  shift
+done
+
+TARGET_DIR="${TARGET_DIR:-.}"
+
+if [[ ! -d "$TARGET_DIR" ]]; then
+  echo "Error: '$TARGET_DIR' is not a directory." >&2
+  exit 1
 fi
 
-DIR="${1:-.}"
-
-if [[ ! -d "$DIR" ]]; then
-    echo "Error: '$DIR' is not a directory" >&2
-    exit 1
+if ! command -v du >/dev/null 2>&1; then
+  echo "Error: 'du' utility is required but not installed." >&2
+  exit 1
 fi
 
-# Use du to calculate size, suppress errors for inaccessible files.
-size=$(du -sh "${DIR}" 2>/dev/null | cut -f1)
+REAL_PATH="$(cd "$TARGET_DIR" && pwd -P)"
+SIZE="$(du -sh "$REAL_PATH" 2>/dev/null | cut -f1)"
 
-echo "Directory size of '$DIR': $size"
+echo "Directory: $REAL_PATH"
+echo "Size:      $SIZE"

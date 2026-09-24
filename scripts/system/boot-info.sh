@@ -3,37 +3,51 @@ set -euo pipefail
 
 show_help() {
   cat <<'EOF'
-Usage: $(basename "$0") [options]
+Usage: boot-info.sh [options]
 
 Options:
   -h, --help   Show this help message and exit
 
-Displays recent boot performance information using systemd-analyze and recent boot logs.
+Description:
+  Displays recent boot performance information using systemd-analyze
+  and recent boot logs (journalctl or /var/log/boot.log).
+  Gracefully handles containers or environments where systemd is not running.
 EOF
   exit 0
 }
 
-# Parse arguments
 for arg in "$@"; do
   case "$arg" in
-    -h|--help) show_help ;;
-    *) echo "Unknown option: $arg" >&2; exit 1 ;;
+    -h|--help)
+      show_help
+      ;;
+    *)
+      echo "Error: Unknown option: $arg" >&2
+      exit 1
+      ;;
   esac
 done
 
+echo "=== System Boot Information ==="
+echo ""
+
 if command -v systemd-analyze >/dev/null 2>&1; then
-  echo "Boot time breakdown:" && systemd-analyze blame
-  echo -e "\nCritical chain:" && systemd-analyze critical-chain
+  echo "Boot time breakdown:"
+  systemd-analyze blame 2>/dev/null | head -n 15 || echo "  (systemd-analyze blame not available; systemd may not be running or boot incomplete)"
+  echo ""
+  echo "Critical chain:"
+  systemd-analyze critical-chain 2>/dev/null || echo "  (critical-chain not available)"
 else
   echo "systemd-analyze not available on this system."
 fi
 
+echo ""
 if command -v journalctl >/dev/null 2>&1; then
-  echo -e "\nRecent boot log (last 20 lines):"
-  journalctl -b -n 20
+  echo "Recent boot log (last 20 lines):"
+  journalctl -b -n 20 2>/dev/null || echo "  (journalctl boot logs not accessible)"
 elif [[ -f /var/log/boot.log ]]; then
-  echo -e "\nRecent boot log (last 20 lines) from /var/log/boot.log:"
-  tail -n 20 /var/log/boot.log
+  echo "Recent boot log from /var/log/boot.log:"
+  tail -n 20 /var/log/boot.log 2>/dev/null || echo "  (unable to read /var/log/boot.log)"
 else
   echo "No boot log accessible."
 fi
