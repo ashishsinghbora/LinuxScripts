@@ -14,12 +14,11 @@ EOF
 }
 
 # Parse arguments
-while (( "$#" )); do
-  case "$1" in
-    -h|--help) show_help;;
-    *) echo "Unknown option: $1"; show_help;;
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) show_help ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
-  shift
 done
 
 echo "Filesystem size and type (human readable):"

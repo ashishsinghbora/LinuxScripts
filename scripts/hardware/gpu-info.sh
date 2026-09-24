@@ -17,12 +17,11 @@ EOF
 }
 
 # Parse options
-while (( "$#" )); do
-  case "$1" in
-    -h|--help) show_help;;
-    *) echo "Unknown option: $1" >&2; exit 1;;
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) show_help ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
-  shift
 done
 
 # Check required commands
@@ -43,8 +42,8 @@ printf "%s\n" "$GPU_DEVS"
 
 # Optional OpenGL info
 if command -v glxinfo >/dev/null 2>&1; then
-  echo "\nOpenGL renderer information (via glxinfo):"
+  printf "\nOpenGL renderer information (via glxinfo):\n"
   glxinfo | grep -i "renderer" | head -n 5 || true
 else
-  echo "\nTip: Install 'mesa-utils' to get OpenGL details via glxinfo."
+  printf "\nTip: Install 'mesa-utils' to get OpenGL details via glxinfo.\n"
 fi

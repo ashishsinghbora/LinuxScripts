@@ -18,12 +18,11 @@ EOF
 }
 
 # Parse arguments
-while (( "$#" )); do
-  case "$1" in
-    -h|--help) show_help;;
-    *) echo "Unknown option: $1" >&2; exit 1;;
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) show_help ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
-  shift
 done
 
 # Ensure required commands are present
@@ -35,5 +34,5 @@ fi
 echo "Memory usage (human readable):"
 free -h
 
-echo "\nDetailed memory info from /proc/meminfo (first 20 lines):"
+printf "\nDetailed memory info from /proc/meminfo (first 20 lines):\n"
 head -n 20 /proc/meminfo

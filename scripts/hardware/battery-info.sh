@@ -16,12 +16,11 @@ EOF
   exit 0
 }
 
-while (( "$#" )); do
-  case "$1" in
-    -h|--help) show_help;;
-    *) echo "Unknown option: $1" >&2; exit 1;;
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) show_help ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
-  shift
 done
 
 echo "=== Battery & Power Information ==="

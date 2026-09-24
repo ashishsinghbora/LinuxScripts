@@ -14,16 +14,15 @@ EOF
 }
 
 # Parse arguments
-while (( "$#" )); do
-  case "$1" in
-    -h|--help) show_help;;
-    *) echo "Unknown option: $1"; show_help;;
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) show_help ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
-  shift
 done
 
 if command -v systemctl >/dev/null 2>&1; then
-  echo "Failed services:" && systemctl --failed --no-legend || true
+  echo "Failed services:"; systemctl --failed --no-legend || true
 else
   echo "systemctl not available on this system."
 fi

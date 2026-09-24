@@ -46,7 +46,7 @@ if command -v curl >/dev/null 2>&1; then
   fi
 elif command -v wget >/dev/null 2>&1; then
   echo "Testing connectivity to $url using wget..."
-  if wget -q --timeout=$timeout --spider "$url"; then
+  if wget -q --timeout="$timeout" --spider "$url"; then
     echo "Internet connectivity OK (wget succeeded)."
     exit 0
   else

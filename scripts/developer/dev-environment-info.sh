@@ -16,12 +16,11 @@ EOF
   exit 0
 }
 
-while (( "$#" )); do
-  case "$1" in
-    -h|--help) show_help;;
-    *) echo "Unknown option: $1" >&2; exit 1;;
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) show_help ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
-  shift
 done
 
 echo "=== Developer Environment Summary ==="
@@ -34,7 +33,7 @@ check_tool() {
   printf "%-18s: " "$name"
   if command -v "$cmd" >/dev/null 2>&1; then
     local ver
-    ver=$("$cmd" $ver_flag 2>&1 | head -n 1 || echo "installed")
+    ver=$("$cmd" "$ver_flag" 2>&1 | head -n 1 || echo "installed")
     echo "$ver ($cmd)"
   else
     echo "Not installed"

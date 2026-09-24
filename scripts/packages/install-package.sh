@@ -57,11 +57,11 @@ fi
 echo "Detected package manager: $PM"
 
 if $AUTOYES; then
-  sudo $INSTALL_CMD "$PACKAGE"
+  sudo "$INSTALL_CMD" "$PACKAGE"
 else
-  read -p "Proceed to install '$PACKAGE' using $PM? [y/N] " resp
+  read -r -p "Proceed to install '$PACKAGE' using $PM? [y/N] " resp
   case "$resp" in
-    y|Y|yes|YES) sudo $INSTALL_CMD "$PACKAGE" ;;
+    y|Y|yes|YES) sudo "$INSTALL_CMD" "$PACKAGE" ;;
     *) echo "Installation aborted."; exit 0 ;;
   esac
 fi

@@ -16,12 +16,11 @@ EOF
   exit 0
 }
 
-while (( "$#" )); do
-  case "$1" in
-    -h|--help) show_help;;
-    *) echo "Unknown option: $1" >&2; exit 1;;
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) show_help ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
-  shift
 done
 
 get_hostname() {
@@ -67,7 +66,7 @@ echo "Memory:"
 if command -v free >/dev/null 2>&1; then
   free -h
 else
-  cat /proc/meminfo | head -n 3
+  head -n 3 /proc/meminfo
 fi
 
 echo ""

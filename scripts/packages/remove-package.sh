@@ -57,11 +57,11 @@ fi
 echo "Detected package manager: $PM"
 
 if $AUTOYES; then
-  sudo $REMOVE_CMD "$PACKAGE"
+  sudo "$REMOVE_CMD" "$PACKAGE"
 else
-  read -p "Proceed to remove '$PACKAGE' using $PM? [y/N] " resp
+  read -r -p "Proceed to remove '$PACKAGE' using $PM? [y/N] " resp
   case "$resp" in
-    y|Y|yes|YES) sudo $REMOVE_CMD "$PACKAGE" ;;
+    y|Y|yes|YES) sudo "$REMOVE_CMD" "$PACKAGE" ;;
     *) echo "Removal aborted."; exit 0 ;;
   esac
 fi

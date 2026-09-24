@@ -16,12 +16,11 @@ EOF
   exit 0
 }
 
-while (( "$#" )); do
-  case "$1" in
-    -h|--help) show_help;;
-    *) echo "Unknown option: $1" >&2; exit 1;;
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) show_help ;;
+    *) echo "Unknown option: $arg" >&2; exit 1 ;;
   esac
-  shift
 done
 
 if ! command -v git >/dev/null 2>&1; then
@@ -47,12 +46,12 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   remotes=$(git remote -v 2>/dev/null | head -n 2 || true)
   if [[ -n "$remotes" ]]; then
     echo "  Remotes:"
-    echo "$remotes" | sed 's/^/    /'
+    while IFS= read -r line; do echo "    $line"; done <<< "$remotes"
   fi
   echo "  Latest Commit :"
-  git log -1 --oneline 2>/dev/null | sed 's/^/    /' || echo "    No commits yet"
+  commit_one=$(git log -1 --oneline 2>/dev/null || true); echo "    ${commit_one:-No commits yet}"
   echo "  Working Tree Status:"
-  git status --short | sed 's/^/    /' || true
+  while IFS= read -r line; do [[ -n "$line" ]] && echo "    $line"; done < <(git status --short 2>/dev/null || true)
 else
   echo "Notice: Current directory is not inside a Git repository."
 fi

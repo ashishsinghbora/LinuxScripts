@@ -47,7 +47,7 @@ fi
 
 # Resolve target to PID(s)
 if [[ "$target" =~ ^[0-9]+$ ]]; then
-  pids=($target)
+  read -ra pids <<< "$target"
 else
   # Use pgrep to find matching processes (exclude this script)
   mapfile -t pids < <(pgrep -f "${target}" | grep -vw $$ || true)
@@ -61,7 +61,7 @@ fi
 echo "Found ${#pids[@]} matching process(es): ${pids[*]}"
 
 if [[ "$force" != "yes" ]]; then
-  read -p "Proceed to send $signal to these process(es)? [y/N] " resp
+  read -r -p "Proceed to send $signal to these process(es)? [y/N] " resp
   case "$resp" in
     y|Y|yes|YES) ;;
     *) echo "Aborted."; exit 0;;

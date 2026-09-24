@@ -41,7 +41,11 @@ while (( "$#" )); do
 done
 
 if [[ -z "$COMMENT" ]]; then
-  hname=$(command -v hostname >/dev/null 2>&1 && hostname || uname -n)
+  if command -v hostname >/dev/null 2>&1; then
+    hname=$(hostname)
+  else
+    hname=$(uname -n)
+  fi
   COMMENT="$(whoami)@$hname"
 fi
 
