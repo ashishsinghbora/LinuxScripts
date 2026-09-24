@@ -3,47 +3,66 @@ set -euo pipefail
 
 show_help() {
   cat <<'EOF'
-Usage: $(basename "$0") [options] <search_term>
+Usage: search-package.sh [options] <search_term>
 
 Options:
-  -h          Show this help message and exit
+  -h, --help    Show this help message and exit
 
-Searches the package repositories of the detected package manager for the given term.
-The search is performed non‑interactively and does not modify the system.
+Description:
+  Searches the package repositories of the detected package manager
+  (pacman, apt, dnf, zypper, apk) for the given term.
 EOF
   exit 0
 }
 
-# Parse options
-while getopts "h" opt; do
-  case "$opt" in
-    h) show_help ;;
-    *) show_help ;;
+SEARCH_TERM=""
+
+while (( "$#" )); do
+  case "$1" in
+    -h|--help)
+      show_help
+      ;;
+    -*)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      if [[ -z "$SEARCH_TERM" ]]; then
+        SEARCH_TERM="$1"
+      else
+        echo "Error: Unexpected additional argument: $1" >&2
+        exit 1
+      fi
+      ;;
   esac
+  shift
 done
 
-shift $((OPTIND-1))
-
-if [[ $# -lt 1 ]]; then
-  echo "Error: search term required."
-  show_help
+if [[ -z "$SEARCH_TERM" ]]; then
+  echo "Error: search term required." >&2
+  echo "Run '$0 --help' for usage." >&2
+  exit 1
 fi
 
-TERM="$1"
-
 if command -v pacman >/dev/null 2>&1; then
-  echo "Searching with pacman for '$TERM'..."
-  pacman -Ss "$TERM" | grep -v "^\s*#"
+  echo "Searching with pacman for '$SEARCH_TERM'..."
+  pacman -Ss "$SEARCH_TERM"
 elif command -v apt-cache >/dev/null 2>&1; then
-  echo "Searching with apt for '$TERM'..."
-  apt-cache search "$TERM"
+  echo "Searching with apt-cache for '$SEARCH_TERM'..."
+  apt-cache search "$SEARCH_TERM"
+elif command -v apt >/dev/null 2>&1; then
+  echo "Searching with apt for '$SEARCH_TERM'..."
+  apt search "$SEARCH_TERM"
 elif command -v dnf >/dev/null 2>&1; then
-  echo "Searching with dnf for '$TERM'..."
-  dnf search "$TERM"
+  echo "Searching with dnf for '$SEARCH_TERM'..."
+  dnf search "$SEARCH_TERM"
 elif command -v zypper >/dev/null 2>&1; then
-  echo "Searching with zypper for '$TERM'..."
-  zypper search "$TERM"
+  echo "Searching with zypper for '$SEARCH_TERM'..."
+  zypper search "$SEARCH_TERM"
+elif command -v apk >/dev/null 2>&1; then
+  echo "Searching with apk for '$SEARCH_TERM'..."
+  apk search "$SEARCH_TERM"
 else
-  echo "Unsupported package manager."
+  echo "Error: Unsupported or no package manager detected." >&2
   exit 1
 fi
