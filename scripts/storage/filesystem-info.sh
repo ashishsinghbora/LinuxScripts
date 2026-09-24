@@ -30,7 +30,11 @@ fi
 
 echo -e "\nMount points and options:"
 if command -v mount >/dev/null 2>&1; then
-  mount | column -t
+  if command -v column >/dev/null 2>&1; then
+    mount | column -t
+  else
+    mount
+  fi
 else
   echo "mount command not found."
 fi
@@ -43,9 +47,9 @@ if command -v tune2fs >/dev/null 2>&1; then
     fstype=$(echo "$line" | awk '{print $3}')
     if [[ "$fstype" == ext* ]]; then
       echo "--- $dev ($fstype) ---"
-      tune2fs -l "$dev" | grep -E 'Filesystem state|Block count|Free blocks|Inode count|Free inodes'
+      (tune2fs -l "$dev" 2>/dev/null || true) | grep -E 'Filesystem state|Block count|Free blocks|Inode count|Free inodes' || true
     fi
-  done < <(df -T | tail -n +2)
+  done < <(df -T 2>/dev/null | tail -n +2 || true)
 else
   echo -e "\nFor detailed ext* info, install e2fsprogs (tune2fs)."
 fi
