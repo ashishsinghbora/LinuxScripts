@@ -1,0 +1,24 @@
+name: Lint and Test
+
+on:
+  push:
+    branches: [ main, 'feat/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  shellcheck:
+    name: ShellCheck and Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run test suite
+        run: |
+          bash tests/test_all.sh
