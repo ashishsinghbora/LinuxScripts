@@ -3,43 +3,61 @@ set -euo pipefail
 
 show_help() {
   cat <<'EOF'
-Usage: $(basename "$0") [options] <package_name>
+Usage: package-info.sh [options] <package_name>
 
 Options:
-  -h          Show this help message and exit
+  -h, --help    Show this help message and exit
 
-Shows detailed information about the specified package using the detected
-package manager. The script does not modify the system.
+Description:
+  Shows detailed information about the specified package using the detected
+  package manager (pacman, apt, dnf, zypper, apk).
 EOF
   exit 0
 }
 
-# Parse options
-while getopts "h" opt; do
-  case "$opt" in
-    h) show_help ;;
-    *) show_help ;;
+PKG=""
+
+while (( "$#" )); do
+  case "$1" in
+    -h|--help)
+      show_help
+      ;;
+    -*)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      if [[ -z "$PKG" ]]; then
+        PKG="$1"
+      else
+        echo "Error: Unexpected additional argument: $1" >&2
+        exit 1
+      fi
+      ;;
   esac
+  shift
 done
 
-shift $((OPTIND-1))
-
-if [[ $# -lt 1 ]]; then
-  echo "Error: package name required."
-  show_help
+if [[ -z "$PKG" ]]; then
+  echo "Error: package name required." >&2
+  echo "Run '$0 --help' for usage." >&2
+  exit 1
 fi
 
-PKG="$1"
-
 if command -v pacman >/dev/null 2>&1; then
-  pacman -Qi "$PKG"
+  # Try local query first, fallback to sync database if not installed
+  pacman -Qi "$PKG" 2>/dev/null || pacman -Si "$PKG"
 elif command -v apt >/dev/null 2>&1; then
   apt show "$PKG"
+elif command -v apt-cache >/dev/null 2>&1; then
+  apt-cache show "$PKG"
 elif command -v dnf >/dev/null 2>&1; then
   dnf info "$PKG"
 elif command -v zypper >/dev/null 2>&1; then
   zypper info "$PKG"
+elif command -v apk >/dev/null 2>&1; then
+  apk info -d "$PKG"
 else
-  echo "Unsupported package manager."
+  echo "Error: Unsupported or no package manager detected." >&2
   exit 1
 fi
