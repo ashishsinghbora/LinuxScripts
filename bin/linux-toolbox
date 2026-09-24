@@ -1,45 +1,28 @@
 #!/usr/bin/env bash
-
-# linux-toolbox – interactive menu front-end for the LinuxScripts utility collection.
-# Presents categories and lets the user select a script to run.
-# Does not duplicate script logic; invokes utility scripts directly.
-
+# linux-toolbox – CLI dispatcher and interactive menu for LinuxScripts toolkit.
 set -euo pipefail
 
 show_help() {
   cat <<'EOF'
-Usage: linux-toolbox [options]
+Usage: linux-toolbox [options] [command] [args...]
+
+Commands:
+  list                          List all available utility categories and scripts
+  run <script_name> [args...]   Directly run a utility script (e.g. developer/command-exists bash)
+  <script_name> [args...]       Shortcut to directly run a utility script
 
 Options:
-  -h, --help        Show this help message and exit
+  -h, --help                    Show this help message and exit
 
 Description:
-  Provides a keyboard-friendly menu to launch utility scripts located under
-  the repository's scripts/ directory. Categories:
-    1) System
-    2) Storage
-    3) Network
-    4) Processes
-    5) Packages
-    6) Hardware
-    7) SSH
-    8) Developer
-    9) Maintenance
-   10) Exit
+  When launched without arguments, opens an interactive keyboard menu
+  to explore and run scripts from the LinuxScripts repository.
 EOF
   exit 0
 }
 
-for arg in "$@"; do
-  case "$arg" in
-    -h|--help) show_help ;;
-    *) echo "Unknown option: $arg" >&2; exit 1 ;;
-  esac
-done
-
-# Resolve repository root relative to script location
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 SCRIPTS_DIR="$REPO_ROOT/scripts"
 
 declare -A CATEGORY_MAP=(
@@ -54,6 +37,96 @@ declare -A CATEGORY_MAP=(
   [9]="maintenance"
 )
 
+list_all_scripts() {
+  echo "=== Available LinuxScripts Utilities ==="
+  echo ""
+  for idx in $(echo "${!CATEGORY_MAP[@]}" | tr ' ' '\n' | sort -n); do
+    cat_name="${CATEGORY_MAP[$idx]}"
+    cat_dir="$SCRIPTS_DIR/$cat_name"
+    echo "[$cat_name]"
+    if [[ -d "$cat_dir" ]]; then
+      for s in "$cat_dir"/*.sh; do
+        if [[ -f "$s" ]]; then
+          s_name="$(basename "$s" .sh)"
+          echo "  - $cat_name/$s_name"
+        fi
+      done
+    fi
+    echo ""
+  done
+}
+
+find_script() {
+  local query="$1"
+  # Strip .sh if user passed it
+  query="${query%.sh}"
+
+  # 1. Exact match category/script
+  if [[ -f "$SCRIPTS_DIR/$query.sh" ]]; then
+    echo "$SCRIPTS_DIR/$query.sh"
+    return 0
+  fi
+
+  # 2. Search by script basename across categories
+  local matches=()
+  while IFS= read -r f; do
+    [[ -n "$f" ]] && matches+=("$f")
+  done < <(find "$SCRIPTS_DIR" -maxdepth 2 -type f -name "$query.sh" 2>/dev/null || true)
+
+  if [[ ${#matches[@]} -eq 1 ]]; then
+    echo "${matches[0]}"
+    return 0
+  elif [[ ${#matches[@]} -gt 1 ]]; then
+    echo "Ambiguous script name '$query'. Please specify category: e.g. '${matches[0]#"$SCRIPTS_DIR/"}'" >&2
+    return 1
+  fi
+
+  return 1
+}
+
+run_script_cli() {
+  local target="$1"
+  shift
+  local script_path
+  if ! script_path="$(find_script "$target")"; then
+    echo "Error: Utility script '$target' not found." >&2
+    echo "Run 'linux-toolbox list' to view available scripts." >&2
+    exit 1
+  fi
+
+  exec "$script_path" "$@"
+}
+
+# CLI argument handling
+if [[ $# -gt 0 ]]; then
+  case "$1" in
+    -h|--help)
+      show_help
+      ;;
+    list)
+      list_all_scripts
+      exit 0
+      ;;
+    run)
+      shift
+      if [[ $# -lt 1 ]]; then
+        echo "Error: Script name required for 'run' command." >&2
+        echo "Usage: linux-toolbox run <script_name> [args...]" >&2
+        exit 1
+      fi
+      run_script_cli "$@"
+      ;;
+    -*)
+      echo "Error: Unknown option: $1" >&2
+      show_help
+      ;;
+    *)
+      run_script_cli "$@"
+      ;;
+  esac
+fi
+
+# Interactive Menu Mode
 main_menu() {
   echo ""
   echo "=============================="
@@ -127,7 +200,6 @@ sub_menu() {
       echo ""
 
       if [[ -n "$extra_args" ]]; then
-        # Parse into array to avoid eval vulnerabilities
         read -ra arg_arr <<< "$extra_args"
         "$selected_script" "${arg_arr[@]}" || echo "Script exited with non-zero status ($?)"
       else
