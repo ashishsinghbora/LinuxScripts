@@ -23,7 +23,15 @@ done
 
 echo "Kernel version:" && uname -r
 
-echo -e "\nLoaded modules:" && lsmod
+echo -e "\nLoaded modules:"
+if command -v lsmod >/dev/null 2>&1; then
+  lsmod
+elif [[ -r /proc/modules ]]; then
+  echo "(showing first 20 modules from /proc/modules)"
+  (head -n 20 /proc/modules 2>/dev/null || true)
+else
+  echo "Kernel module information not available."
+fi
 
 if [[ -r /proc/config.gz ]]; then
   echo -e "\nKernel config (compressed, preview):"
