@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+# linux-toolbox – interactive menu front-end for the LinuxScripts utility collection.
+# Presents categories and lets the user select a script to run.
+# Does not duplicate script logic; invokes utility scripts directly.
+
+set -euo pipefail
+
+show_help() {
+  cat <<'EOF'
+Usage: linux-toolbox [options]
+
+Options:
+  -h, --help        Show this help message and exit
+
+Description:
+  Provides a keyboard-friendly menu to launch utility scripts located under
+  the repository's scripts/ directory. Categories:
+    1) System
+    2) Storage
+    3) Network
+    4) Processes
+    5) Packages
+    6) Hardware
+    7) SSH
+    8) Developer
+    9) Maintenance
+   10) Exit
+EOF
+  exit 0
+}
+
+while (( "$#" )); do
+  case "$1" in
+    -h|--help) show_help;;
+    *) echo "Unknown option: $1" >&2; exit 1;;
+  esac
+  shift
+done
+
+# Resolve repository root relative to script location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPTS_DIR="$REPO_ROOT/scripts"
+
+declare -A CATEGORY_MAP=(
+  [1]="system"
+  [2]="storage"
+  [3]="network"
+  [4]="process"
+  [5]="packages"
+  [6]="hardware"
+  [7]="ssh"
+  [8]="developer"
+  [9]="maintenance"
+)
+
+main_menu() {
+  echo ""
+  echo "=============================="
+  echo "   Linux Toolbox Main Menu    "
+  echo "=============================="
+  echo " 1) System"
+  echo " 2) Storage"
+  echo " 3) Network"
+  echo " 4) Processes"
+  echo " 5) Packages"
+  echo " 6) Hardware"
+  echo " 7) SSH"
+  echo " 8) Developer"
+  echo " 9) Maintenance"
+  echo "10) Exit"
+  echo "------------------------------"
+  read -rp "Select a category [1-10]: " cat_choice
+
+  case "$cat_choice" in
+    10)
+      echo "Exiting Linux Toolbox. Goodbye!"
+      exit 0
+      ;;
+    [1-9])
+      sub_menu "${CATEGORY_MAP[$cat_choice]}"
+      ;;
+    *)
+      echo "Invalid selection. Please choose a number between 1 and 10."
+      main_menu
+      ;;
+  esac
+}
+
+sub_menu() {
+  local category="$1"
+  local dir="$SCRIPTS_DIR/$category"
+
+  if [[ ! -d "$dir" ]]; then
+    echo "Category directory not found: $dir"
+    main_menu
+    return
+  fi
+
+  mapfile -t scripts < <(find "$dir" -maxdepth 1 -type f -name "*.sh" | sort)
+  if [[ ${#scripts[@]} -eq 0 ]]; then
+    echo "No scripts found in $category."
+    main_menu
+    return
+  fi
+
+  echo ""
+  echo "------------------------------"
+  echo " Category: $category"
+  echo "------------------------------"
+  for i in "${!scripts[@]}"; do
+    printf "%2d) %s\n" $((i+1)) "$(basename "${scripts[$i]}")"
+  done
+  echo " 0) Back to main menu"
+  echo "------------------------------"
+  read -rp "Select a script [0-${#scripts[@]}]: " script_choice
+
+  if [[ "$script_choice" =~ ^[0-9]+$ ]]; then
+    if [[ "$script_choice" -eq 0 ]]; then
+      main_menu
+      return
+    elif (( script_choice >= 1 && script_choice <= ${#scripts[@]} )); then
+      local selected_script="${scripts[$((script_choice-1))]}"
+      echo ""
+      echo "Running $(basename "$selected_script")..."
+      read -rp "Enter arguments for the script (press Enter for none): " extra_args
+      echo ""
+
+      if [[ -n "$extra_args" ]]; then
+        # Parse into array to avoid eval vulnerabilities
+        read -ra arg_arr <<< "$extra_args"
+        "$selected_script" "${arg_arr[@]}" || echo "Script exited with non-zero status ($?)"
+      else
+        "$selected_script" || echo "Script exited with non-zero status ($?)"
+      fi
+
+      echo ""
+      read -rp "Press Enter to return to $category menu..." _
+      sub_menu "$category"
+      return
+    fi
+  fi
+
+  echo "Invalid choice. Please enter a valid number."
+  sub_menu "$category"
+}
+
+main_menu
