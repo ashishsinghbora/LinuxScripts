@@ -44,13 +44,13 @@ jobs:
       - name: Install essential tools
         run: |
           if command -v apt-get >/dev/null 2>&1; then
-            apt-get update && apt-get install -y git bash coreutils python3 tar gzip bzip2 xz-utils zip unzip iproute2 procps
+            apt-get update && apt-get install -y git bash coreutils python3 tar gzip bzip2 xz-utils zip unzip iproute2 procps openssh-client bsdmainutils
           elif command -v dnf >/dev/null 2>&1; then
-            dnf install -y git bash coreutils python3 tar gzip bzip2 xz zip unzip iproute procps-ng which
+            dnf install -y git bash coreutils python3 tar gzip bzip2 xz zip unzip iproute procps-ng which openssh util-linux
           elif command -v pacman >/dev/null 2>&1; then
-            pacman -Syu --noconfirm git bash coreutils python tar gzip bzip2 xz zip unzip iproute2 procps-ng which
+            pacman -Syu --noconfirm git bash coreutils python tar gzip bzip2 xz zip unzip iproute2 procps-ng which openssh util-linux
           elif command -v apk >/dev/null 2>&1; then
-            apk add --no-cache git bash coreutils python3 tar gzip bzip2 xz zip unzip iproute2 procps which
+            apk add --no-cache git bash coreutils python3 tar gzip bzip2 xz zip unzip iproute2 procps which openssh-client util-linux
           fi
 
       - name: Check out repository

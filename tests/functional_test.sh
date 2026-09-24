@@ -236,17 +236,21 @@ echo "--- 7. SSH Key Setup ---"
 SSH_HOME="$TEST_TMP/ssh_home"
 mkdir -p "$SSH_HOME"
 
-HOME="$SSH_HOME" "$ROOT_DIR/scripts/ssh/ssh-key-setup.sh" -p "" -y >/dev/null
-assert_success "ssh-key-setup.sh generates Ed25519 key" test -f "$SSH_HOME/.ssh/id_ed25519"
-assert_success "ssh-key-setup.sh enforces 0700 permission on .ssh" test "$(stat -c "%a" "$SSH_HOME/.ssh")" = "700"
-assert_success "ssh-key-setup.sh enforces 0600 permission on private key" test "$(stat -c "%a" "$SSH_HOME/.ssh/id_ed25519")" = "600"
+if command -v ssh-keygen >/dev/null 2>&1; then
+  HOME="$SSH_HOME" "$ROOT_DIR/scripts/ssh/ssh-key-setup.sh" -p "" -y >/dev/null
+  assert_success "ssh-key-setup.sh generates Ed25519 key" test -f "$SSH_HOME/.ssh/id_ed25519"
+  assert_success "ssh-key-setup.sh enforces 0700 permission on .ssh" test "$(stat -c "%a" "$SSH_HOME/.ssh")" = "700"
+  assert_success "ssh-key-setup.sh enforces 0600 permission on private key" test "$(stat -c "%a" "$SSH_HOME/.ssh/id_ed25519")" = "600"
 
-assert_failure "ssh-key-setup.sh refuses overwrite without -f" \
-  env HOME="$SSH_HOME" "$ROOT_DIR/scripts/ssh/ssh-key-setup.sh" -p ""
+  assert_failure "ssh-key-setup.sh refuses overwrite without -f" \
+    env HOME="$SSH_HOME" "$ROOT_DIR/scripts/ssh/ssh-key-setup.sh" -p ""
 
-HOME="$SSH_HOME" "$ROOT_DIR/scripts/ssh/ssh-key-setup.sh" -f -y -p "" -c "updated@host" >/dev/null
-BACKUP_KEYS=$(find "$SSH_HOME/.ssh" -name "id_ed25519.pub.bak_*" | wc -l)
-assert_success "ssh-key-setup.sh creates backup before overwrite" test "$BACKUP_KEYS" -ge 1
+  HOME="$SSH_HOME" "$ROOT_DIR/scripts/ssh/ssh-key-setup.sh" -f -y -p "" -c "updated@host" >/dev/null
+  BACKUP_KEYS=$(find "$SSH_HOME/.ssh" -name "id_ed25519.pub.bak_*" | wc -l)
+  assert_success "ssh-key-setup.sh creates backup before overwrite" test "$BACKUP_KEYS" -ge 1
+else
+  echo "  ⚠️  ssh-keygen not installed; skipping ssh-key-setup test"
+fi
 
 # ----------------------------------------------------------------------
 # 8. Package Manager Mock Suite
